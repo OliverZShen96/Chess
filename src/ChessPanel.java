@@ -1,17 +1,27 @@
 import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.image.*;
 import java.io.*;
+import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
-public class ChessPanel extends JPanel {
+public class ChessPanel extends JPanel implements MouseListener {
 	private static int SQUARE_SIZE = 64;
 	private ChessBoard board;
+	private Square clickedSquare;
+	private ArrayList<Square> possibleMoves;
+	private boolean isWhiteTurn;
 	
 	public ChessPanel(ChessBoard board) {
 		super();
+		this.addMouseListener(this);
 		this.board = board;
+		this.clickedSquare = null;
+		this.possibleMoves = new ArrayList<Square>();
+		this.isWhiteTurn = true;
 	}
 	
 	@Override
@@ -44,27 +54,59 @@ public class ChessPanel extends JPanel {
 	private void paintBoard(Graphics g) {
 		g.setColor(Color.WHITE);
         int x, y;
-        for (x = 0; x <= 7; x+=2) {
-        	for (y = 0; y <= 7; y+=2) {
-        		g.fillRect(SQUARE_SIZE*x, SQUARE_SIZE*y, SQUARE_SIZE, SQUARE_SIZE);
+        for (x = 0; x <= 7; x++) {
+        	for (y = 0; y <= 7; y++) {
+        		drawSquare(x, y, g);
         	}
         }
-        for (x = 1; x <= 7; x+=2) {
-        	for (y = 1; y <= 7; y+=2) {
-        		g.fillRect(SQUARE_SIZE*x, SQUARE_SIZE*y, SQUARE_SIZE, SQUARE_SIZE);
-        	}
-        }
-        
-        g.setColor(Color.GRAY);
-        for (x = 1; x <= 7; x+=2) {
-        	for (y = 0; y <= 7; y+=2) {
-        		g.fillRect(SQUARE_SIZE*x, SQUARE_SIZE*y, SQUARE_SIZE, SQUARE_SIZE);
-        	}
-        }
-        for (x = 0; x <= 7; x+=2) {
-        	for (y = 1; y <= 7; y+=2) {
-        		g.fillRect(SQUARE_SIZE*x, SQUARE_SIZE*y, SQUARE_SIZE, SQUARE_SIZE);
-        	}
-        }
+	}
+	
+	private void drawSquare(int x, int y, Graphics g) {
+		if ((x+y)%2 == 0) g.setColor(Color.WHITE);
+		if ((x+y)%2 == 1) g.setColor(Color.GRAY);
+		if (clickedSquare != null) {
+			if (board.getSquare(x, y) == clickedSquare) g.setColor(new Color(160,40,200));
+			if (possibleMoves.contains(board.getSquare(x, y))) {
+				if ((x+y)%2 == 0) g.setColor(new Color(150,200,200));
+				if ((x+y)%2 == 1) g.setColor(new Color(80,100,200));
+			}
+		}
+		g.fillRect(SQUARE_SIZE*x, SQUARE_SIZE*y, SQUARE_SIZE, SQUARE_SIZE);
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {	
+		Square oldSquare = this.clickedSquare;
+		this.clickedSquare = board.getSquare(e.getX()/64, e.getY()/64);
+		
+		if (this.possibleMoves.contains(clickedSquare)) {
+			this.board.makeMove(oldSquare, clickedSquare);
+			this.isWhiteTurn = !isWhiteTurn;
+			this.possibleMoves.clear();
+		} else {
+			this.possibleMoves.clear();
+			if (clickedSquare.getPieceType() != null) {
+				if (clickedSquare.hasWhitePiece() == this.isWhiteTurn) {
+					this.possibleMoves = board.findPossiblemoves(clickedSquare);
+				}
+			}
+		}
+		repaint();
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {	
 	}
 }

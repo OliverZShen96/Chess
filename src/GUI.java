@@ -1,6 +1,5 @@
 import java.awt.*;
 import java.io.IOException;
-
 import javax.swing.*;
 
 public class GUI extends JFrame {
@@ -19,9 +18,8 @@ public class GUI extends JFrame {
 		components.add(new ChessPanel(b));
 		this.add(components);
 		
+		this.setSize(600, 600);
 		this.setVisible(true);
-		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
-		
-		
+		this.setDefaultCloseOperation(EXIT_ON_CLOSE);	
 	}
 }

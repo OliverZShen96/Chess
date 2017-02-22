@@ -11,11 +11,40 @@ public class Square {
 		this.piece = null;
 	}
 	
-	public void placePiece(Piece piece) {
-		this.piece = piece;
+	public int getX() {
+		return x;
 	}
 	
-	public void clearSquare(){
+	public int getY() {
+		return y;
+	}
+	
+	public String getPieceType() {
+		if (piece != null) return piece.getType();
+		return null;
+	}
+	
+	public boolean hasWhitePiece() {
+		if (piece != null) return piece.isWhite();
+		return false;
+	}
+	
+	public void placePiece(Piece piece) {
+		this.piece = piece;
+		piece.setX(x);
+		piece.setY(y);
+	}
+	
+	public void clearSquare() {
 		this.piece = null;
+	}
+	
+	public boolean hasPiece() {
+		if (piece == null) return false;
+		return true;
+	}
+	
+	public Piece getPiece() {
+		return piece;
 	}
 }

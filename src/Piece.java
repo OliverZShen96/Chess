@@ -24,4 +24,16 @@ public class Piece {
 	public String getType() {
 		return type;
 	}
+	
+	public boolean isWhite() {
+		return isWhite;
+	}
+
+	public void setX(int x) {
+		this.x = x;
+	}
+	
+	public void setY(int y) {
+		this.y = y;
+	}
 }

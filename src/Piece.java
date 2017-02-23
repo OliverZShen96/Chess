@@ -1,6 +1,6 @@
+import java.io.Serializable;
 
-
-public class Piece {
+public class Piece implements Serializable{
 	private boolean isWhite;
 	private int x;
 	private int y;

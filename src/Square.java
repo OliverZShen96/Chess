@@ -1,5 +1,6 @@
+import java.io.Serializable;
 
-public class Square {
+public class Square implements Serializable{
 	private int x;
 	private int y;
 	

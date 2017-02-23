@@ -65,8 +65,8 @@ public class ChessPanel extends JPanel implements MouseListener {
 		if ((x+y)%2 == 0) g.setColor(Color.WHITE);
 		if ((x+y)%2 == 1) g.setColor(Color.GRAY);
 		if (clickedSquare != null) {
-			if (board.getSquare(x, y) == clickedSquare) g.setColor(new Color(160,40,200));
-			if (possibleMoves.contains(board.getSquare(x, y))) {
+			if (board.getSquare(x, y, board.getSquares()) == clickedSquare) g.setColor(new Color(160,40,200));
+			if (possibleMoves.contains(board.getSquare(x, y, board.getSquares()))) {
 				if ((x+y)%2 == 0) g.setColor(new Color(150,200,200));
 				if ((x+y)%2 == 1) g.setColor(new Color(80,100,200));
 			}
@@ -87,9 +87,12 @@ public class ChessPanel extends JPanel implements MouseListener {
 	}
 
 	@Override
+	// on mouse press, find the pressed square
+	// if the move is currently highlighted, make the move
+	// if not, get all possible moves from that square
 	public void mousePressed(MouseEvent e) {	
 		Square oldSquare = this.clickedSquare;
-		this.clickedSquare = board.getSquare(e.getX()/64, e.getY()/64);
+		this.clickedSquare = board.getSquare(e.getX()/64, e.getY()/64, board.getSquares());
 		
 		if (this.possibleMoves.contains(clickedSquare)) {
 			this.board.makeMove(oldSquare, clickedSquare);
@@ -99,7 +102,13 @@ public class ChessPanel extends JPanel implements MouseListener {
 			this.possibleMoves.clear();
 			if (clickedSquare.getPieceType() != null) {
 				if (clickedSquare.hasWhitePiece() == this.isWhiteTurn) {
-					this.possibleMoves = board.findPossiblemoves(clickedSquare);
+					try {
+						this.possibleMoves = board.findLegalMoves(clickedSquare, board.getSquares());
+					} catch (ClassNotFoundException e1) {
+						e1.printStackTrace();
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
 				}
 			}
 		}

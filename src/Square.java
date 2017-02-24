@@ -25,9 +25,9 @@ public class Square implements Serializable{
 		return null;
 	}
 	
-	public boolean hasWhitePiece() {
-		if (piece != null) return piece.isWhite();
-		return false;
+	public Player getColor() {
+		if (piece != null) return piece.getColor();
+		return null;
 	}
 	
 	public void placePiece(Piece piece) {

@@ -13,7 +13,7 @@ public class ChessPanel extends JPanel implements MouseListener {
 	private ChessBoard board;
 	private Square clickedSquare;
 	private ArrayList<Square> possibleMoves;
-	private boolean isWhiteTurn;
+	private Player playerToMove;
 	
 	public ChessPanel(ChessBoard board) {
 		super();
@@ -21,7 +21,7 @@ public class ChessPanel extends JPanel implements MouseListener {
 		this.board = board;
 		this.clickedSquare = null;
 		this.possibleMoves = new ArrayList<Square>();
-		this.isWhiteTurn = true;
+		this.playerToMove = Player.white;
 	}
 	
 	@Override
@@ -96,12 +96,13 @@ public class ChessPanel extends JPanel implements MouseListener {
 		
 		if (this.possibleMoves.contains(clickedSquare)) {
 			this.board.makeMove(oldSquare, clickedSquare);
-			this.isWhiteTurn = !isWhiteTurn;
 			this.possibleMoves.clear();
+			if (playerToMove == Player.white) playerToMove = Player.black;
+			else playerToMove = Player.white;
 		} else {
 			this.possibleMoves.clear();
 			if (clickedSquare.getPieceType() != null) {
-				if (clickedSquare.hasWhitePiece() == this.isWhiteTurn) {
+				if (clickedSquare.getColor() == this.playerToMove) {
 					try {
 						this.possibleMoves = board.findLegalMoves(clickedSquare, board.getSquares());
 					} catch (ClassNotFoundException e1) {

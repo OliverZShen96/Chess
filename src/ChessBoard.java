@@ -83,15 +83,15 @@ public class ChessBoard {
 		for (x = 0; x <= 7; x++) {
 			Piece p = null;
 			if (x == 0 || x == 7) {
-				p = new Piece(x, y, "Castle", true);
+				p = new Piece(x, y, "Castle", Player.white);
 			} else if (x == 1 || x == 6) {
-				p = new Piece(x, y, "Knight", true);
+				p = new Piece(x, y, "Knight", Player.white);
 			} else if (x == 2 || x == 5) {
-				p = new Piece(x, y, "Bishop", true);
+				p = new Piece(x, y, "Bishop", Player.white);
 			} else if (x == 3) {
-				p = new Piece(x, y, "Queen", true);
+				p = new Piece(x, y, "Queen", Player.white);
 			} else if (x == 4) {
-				p = new Piece(x, y, "King", true);
+				p = new Piece(x, y, "King", Player.white);
 			}
 			this.white.add(p);
 			squares[x][y].placePiece(p);
@@ -100,7 +100,7 @@ public class ChessBoard {
 		y = 6;
 		//white pawns
 		for (x = 0; x <= 7; x++) {
-			Piece p = new Piece(x,y, "Pawn", true);
+			Piece p = new Piece(x,y, "Pawn", Player.white);
 			this.white.add(p);
 			squares[x][y].placePiece(p);
 		}
@@ -110,15 +110,15 @@ public class ChessBoard {
 		for (x = 0; x <= 7; x++) {
 			Piece p = null;
 			if (x == 0 || x == 7) {
-				p = new Piece(x, y, "Castle", false);
+				p = new Piece(x, y, "Castle", Player.black);
 			} else if (x == 1 || x == 6) {
-				p = new Piece(x, y, "Knight", false);
+				p = new Piece(x, y, "Knight", Player.black);
 			} else if (x == 2 || x == 5) {
-				p = new Piece(x, y, "Bishop", false);
+				p = new Piece(x, y, "Bishop", Player.black);
 			} else if (x == 3) {
-				p = new Piece(x, y, "Queen", false);
+				p = new Piece(x, y, "Queen", Player.black);
 			} else if (x == 4) {
-				p = new Piece(x, y, "King", false);
+				p = new Piece(x, y, "King", Player.black);
 			}
 			this.black.add(p);
 			squares[x][y].placePiece(p);
@@ -127,7 +127,7 @@ public class ChessBoard {
 		y = 1;
 		//black pawns
 		for (x = 0; x <= 7; x++) {
-			Piece p = new Piece(x,y, "Pawn", false);
+			Piece p = new Piece(x,y, "Pawn", Player.black);
 			this.black.add(p);
 			squares[x][y].placePiece(p);
 		}
@@ -160,7 +160,7 @@ public class ChessBoard {
 	// finds moves that are illegal due to ending in check
 	// NEED TO FIX THIS
 	private boolean moveCausesCheck(Square squareFrom, Square squareTo, Square[][] boardState) throws IOException, ClassNotFoundException {
-		boolean isWhite = squareFrom.hasWhitePiece();
+		Player color = squareFrom.getColor();
 		
 		// deep clone current game state
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -184,7 +184,7 @@ public class ChessBoard {
 	    cloneTo.placePiece(p);
 	    cloneFrom.clearSquare();
 	    
-	    if (isWhite) return (whiteIsChecked(copy));
+	    if (color == Player.white) return (whiteIsChecked(copy));
 	    else return (blackIsChecked(copy));
 	}
 
@@ -192,86 +192,94 @@ public class ChessBoard {
 		ArrayList<Square> possibleSquaresTo = new ArrayList<Square>();
 		int x = squareFrom.getX();
 		int y = squareFrom.getY();
-		boolean isWhite = squareFrom.hasWhitePiece();
+		Player color = squareFrom.getColor();
 		
 		if (squareFrom.getPieceType().equals("Pawn")) {
-			possibleSquaresTo.addAll(findPawnMoves(x, y, isWhite, boardState));
+			possibleSquaresTo.addAll(findPawnMoves(x, y, boardState));
 		} else if (squareFrom.getPieceType().equals("Castle")) {
-			possibleSquaresTo.addAll(findCastleMoves(x, y, isWhite, boardState));
+			possibleSquaresTo.addAll(findCastleMoves(x, y, boardState));
 		} else if (squareFrom.getPieceType().equals("Knight")) {
-			possibleSquaresTo.addAll(findKnightMoves(x, y, isWhite, boardState));
+			possibleSquaresTo.addAll(findKnightMoves(x, y, boardState));
 		} else if (squareFrom.getPieceType().equals("Bishop")) {
-			possibleSquaresTo.addAll(findBishopMoves(x, y, isWhite, boardState));
+			possibleSquaresTo.addAll(findBishopMoves(x, y, boardState));
 		} else if (squareFrom.getPieceType().equals("Queen")) {
-			possibleSquaresTo.addAll(findQueenMoves(x, y, isWhite, boardState));
+			possibleSquaresTo.addAll(findQueenMoves(x, y, boardState));
 		} else if (squareFrom.getPieceType().equals("King")) {
-			possibleSquaresTo.addAll(findKingMoves(x, y, isWhite, boardState));
+			possibleSquaresTo.addAll(findKingMoves(x, y, boardState));
 		}
 		return possibleSquaresTo;
 	}
 
-	private ArrayList<Square> findPawnMoves(int x, int y, boolean isWhite, Square[][] boardState) {
+	private ArrayList<Square> findPawnMoves(int x, int y, Square[][] boardState) {
+		Player currTurn = Player.white;
+		if (boardState[x][y].getColor() == Player.black) currTurn = Player.black;
+		
 		ArrayList<Square> moves = new ArrayList<Square>();
-		int yDir;
-		if (isWhite) yDir = -1;
-		else yDir = 1;
+		int yDir = 1;
+		if (currTurn == Player.white) yDir = -1;
 		
 		// first space in front
 		if (!boardState[x][y+yDir].hasPiece()) {
 			moves.add(boardState[x][y+yDir]);
 			
 			// extra space if first move
-			if ((isWhite && y == 6 || !isWhite && y == 1)) {
+			if ((currTurn == Player.white && y == 6 || currTurn == Player.black && y == 1)) {
 				if (!boardState[x][y+yDir*2].hasPiece()) moves.add(boardState[x][y+yDir*2]);
 			}
 		}	
 		// capturing
 		if (x < 7) {
-			if (boardState[x+1][y+yDir].hasPiece() && boardState[x+1][y+yDir].hasWhitePiece() != isWhite) {
+			if (boardState[x+1][y+yDir].hasPiece() && boardState[x+1][y+yDir].getColor() != currTurn) {
 				moves.add(boardState[x+1][y+yDir]);
 			}
 		}
 		if (x > 0) {
-			if (boardState[x-1][y+yDir].hasPiece() && boardState[x-1][y+yDir].hasWhitePiece() != isWhite) {
+			if (boardState[x-1][y+yDir].hasPiece() && boardState[x-1][y+yDir].getColor() != currTurn) {
 				moves.add(boardState[x-1][y+yDir]);
 			}
 		}
 		return moves;
 	}
-	private ArrayList<Square> findCastleMoves(int x, int y, boolean isWhite, Square[][] boardState) {
+	private ArrayList<Square> findCastleMoves(int x, int y, Square[][] boardState) {
+		Player currTurn = Player.white;
+		if (boardState[x][y].getColor() == Player.black) currTurn = Player.black;
+		
 		ArrayList<Square> moves = new ArrayList<Square>();
 		int xVal, yVal;
 		for (xVal = x+1, yVal = y; xVal <= 7; xVal++) {
 			if (boardState[xVal][yVal].hasPiece()) {
-				if (boardState[xVal][yVal].hasWhitePiece() == isWhite) break;
+				if (boardState[xVal][yVal].getColor() == currTurn) break;
 			}
 			moves.add(boardState[xVal][yVal]);
 			if (boardState[xVal][yVal].hasPiece()) break;
 		}
 		for (xVal = x-1, yVal = y; xVal >= 0; xVal--) {
 			if (boardState[xVal][yVal].hasPiece()) {
-				if (boardState[xVal][yVal].hasWhitePiece() == isWhite) break;
+				if (boardState[xVal][yVal].getColor() == currTurn) break;
 			}
 			moves.add(boardState[xVal][yVal]);
 			if (boardState[xVal][yVal].hasPiece()) break;
 		}
 		for (xVal = x, yVal = y+1; yVal <= 7; yVal++) {
 			if (boardState[xVal][yVal].hasPiece()) {
-				if (boardState[xVal][yVal].hasWhitePiece() == isWhite) break;
+				if (boardState[xVal][yVal].getColor() == currTurn) break;
 			}
 			moves.add(boardState[xVal][yVal]);
 			if (boardState[xVal][yVal].hasPiece()) break;
 		}
 		for (xVal = x, yVal = y-1; yVal >= 0; yVal--) {
 			if (boardState[xVal][yVal].hasPiece()) {
-				if (boardState[xVal][yVal].hasWhitePiece() == isWhite) break;
+				if (boardState[xVal][yVal].getColor() == currTurn) break;
 			}
 			moves.add(boardState[xVal][yVal]);
 			if (boardState[xVal][yVal].hasPiece()) break;
 		}
 		return moves;
 	}
-	private ArrayList<Square> findKnightMoves(int x, int y, boolean isWhite, Square[][] boardState) {
+	private ArrayList<Square> findKnightMoves(int x, int y, Square[][] boardState) {
+		Player currTurn = Player.white;
+		if (boardState[x][y].getColor() == Player.black) currTurn = Player.black;
+		
 		ArrayList<Square> moves = new ArrayList<Square>();
 		int xBuff;
 		int yBuff;
@@ -282,61 +290,67 @@ public class ChessBoard {
 			
 			if (xBuff + x >= 0 && xBuff + x <= 7) {
 				if (y + yBuff >= 0 && y + yBuff <= 7) {
-					if (isValidMove(xBuff+x, y+yBuff, isWhite, boardState)) moves.add(boardState[xBuff+x][y+yBuff]);
+					if (!boardState[xBuff + x][yBuff + y].hasPiece() || boardState[xBuff + x][yBuff + y].getColor() != currTurn) moves.add(boardState[xBuff+x][y+yBuff]);
 				}
 				if (y - yBuff >= 0 && y - yBuff <= 7) {
-					if (isValidMove(xBuff+x, y-yBuff, isWhite, boardState)) moves.add(boardState[xBuff+x][y-yBuff]);
+					if (!boardState[xBuff + x][y - yBuff].hasPiece() || boardState[xBuff + x][y - yBuff].getColor() != currTurn) moves.add(boardState[xBuff+x][y-yBuff]);
 				}
 			}
 		}
 		return moves;
 	}
-	private ArrayList<Square> findBishopMoves(int x, int y, boolean isWhite, Square[][] boardState) {
+	private ArrayList<Square> findBishopMoves(int x, int y, Square[][] boardState) {
+		Player currTurn = Player.white;
+		if (boardState[x][y].getColor() == Player.black) currTurn = Player.black;
+		
 		ArrayList<Square> moves = new ArrayList<Square>();
 		int xVal, yVal;
 		for (xVal = x+1, yVal = y+1; xVal <= 7 && yVal <= 7; xVal++, yVal++) {
 			if (boardState[xVal][yVal].hasPiece()) {
-				if (boardState[xVal][yVal].hasWhitePiece() == isWhite) break;
+				if (boardState[xVal][yVal].getColor() == currTurn) break;
 			}
 			moves.add(boardState[xVal][yVal]);
 			if (boardState[xVal][yVal].hasPiece()) break;
 		}
 		for (xVal = x+1, yVal = y-1; xVal <= 7 && yVal >= 0; xVal++, yVal--) {
 			if (boardState[xVal][yVal].hasPiece()) {
-				if (boardState[xVal][yVal].hasWhitePiece() == isWhite) break;
+				if (boardState[xVal][yVal].getColor() == currTurn) break;
 			}
 			moves.add(boardState[xVal][yVal]);
 			if (boardState[xVal][yVal].hasPiece()) break;
 		}
 		for (xVal = x-1, yVal = y-1; xVal >= 0 && yVal >= 0; xVal--, yVal--) {
 			if (boardState[xVal][yVal].hasPiece()) {
-				if (boardState[xVal][yVal].hasWhitePiece() == isWhite) break;
+				if (boardState[xVal][yVal].getColor() == currTurn) break;
 			}
 			moves.add(boardState[xVal][yVal]);
 			if (boardState[xVal][yVal].hasPiece()) break;
 		}
 		for (xVal = x-1, yVal = y+1; xVal >= 0 && yVal <= 7; xVal--, yVal++) {
 			if (boardState[xVal][yVal].hasPiece()) {
-				if (boardState[xVal][yVal].hasWhitePiece() == isWhite) break;
+				if (boardState[xVal][yVal].getColor() == currTurn) break;
 			}
 			moves.add(boardState[xVal][yVal]);
 			if (boardState[xVal][yVal].hasPiece()) break;
 		}
 		return moves;
 	}
-	private ArrayList<Square> findQueenMoves(int x, int y, boolean isWhite, Square[][] boardState) {
+	private ArrayList<Square> findQueenMoves(int x, int y, Square[][] boardState) {
 		ArrayList<Square> moves = new ArrayList<Square>();
-		moves.addAll(findCastleMoves(x, y, isWhite, boardState));
-		moves.addAll(findBishopMoves(x, y, isWhite, boardState));
+		moves.addAll(findCastleMoves(x, y, boardState));
+		moves.addAll(findBishopMoves(x, y, boardState));
 		return moves;
 	}
-	private ArrayList<Square> findKingMoves(int x, int y, boolean isWhite, Square[][] boardState) {
+	private ArrayList<Square> findKingMoves(int x, int y, Square[][] boardState) {
+		Player currTurn = Player.white;
+		if (boardState[x][y].getColor() == Player.black) currTurn = Player.black;
+		
 		ArrayList<Square> moves = new ArrayList<Square>();
 		for (int xVal = x-1; xVal <= x+1; xVal++) {
 			for (int yVal = y-1; yVal <= y+1; yVal++) {
 				if (xVal == x && yVal == y) continue;
 				if (xVal > 7 || xVal < 0 || yVal > 7 || yVal < 0) continue;
-				if (!boardState[xVal][yVal].hasPiece() || boardState[xVal][yVal].hasWhitePiece() != isWhite) {
+				if (!boardState[xVal][yVal].hasPiece() || boardState[xVal][yVal].getColor() != currTurn) {
 					moves.add(boardState[xVal][yVal]);
 				}
 				System.out.println(xVal + " " + yVal);
@@ -364,9 +378,10 @@ public class ChessBoard {
 		from.clearSquare();
 	}
 	
-	private boolean isValidMove(int x, int y, boolean isWhite, Square[][] boardState) {
+	// checks if the proposed move already has a piece in it of the player's own color
+	private boolean squareIsOccupied(int x, int y, Player color, Square[][] boardState) {
 		if (!boardState[x][y].hasPiece()) return true;
-		if (boardState[x][y].hasWhitePiece() != isWhite) return true;
+		if (boardState[x][y].getColor() != color) return true;
 		return false;
 	}
 }

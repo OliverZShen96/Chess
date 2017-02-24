@@ -1,13 +1,13 @@
 import java.io.Serializable;
 
 public class Piece implements Serializable{
-	private boolean isWhite;
+	private Player color;
 	private int x;
 	private int y;
 	private String type;
 	
-	public Piece(int x, int y, String type, boolean isWhite) {
-		this.isWhite = isWhite;
+	public Piece(int x, int y, String type, Player color) {
+		this.color = color;
 		this.x = x;
 		this.y = y;
 		this.type = type;	
@@ -25,8 +25,8 @@ public class Piece implements Serializable{
 		return type;
 	}
 	
-	public boolean isWhite() {
-		return isWhite;
+	public Player getColor() {
+		return color;
 	}
 
 	public void setX(int x) {

@@ -4,16 +4,12 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 
 public class ChessBoard {
 	private ArrayList<Piece> white;
 	private ArrayList<Piece> black;
 	private Square[][] squares;
 	
-	public Square[][] getSquares() {
-		return squares;
-	}
 	public ChessBoard() {
 		this.squares = new Square[8][8];
 		for(int x = 0; x <= 7; x++) {
@@ -25,54 +21,23 @@ public class ChessBoard {
 		this.black = new ArrayList<Piece>();
 		setup();
 	}
-	
-	public boolean whiteIsChecked(Square[][] boardState) {
-		Square kingSquare = null;
-		for (Piece p : white) {
-			if (p.getType().equals("King")) {
-				kingSquare = boardState[p.getX()][p.getY()];
-			}
-		}
-		
-		for (Piece p : black) {
-			ArrayList<Square> moves = this.findAllMoves(boardState[p.getX()][p.getY()], boardState);
-			if (moves.contains(kingSquare))  {
-				return true;
-			}
-		}
-		return false;
+
+	public Square[][] getSquares() {
+		return squares;
 	}
 	
-	public boolean blackIsChecked(Square[][] boardState) {
-		Square kingSquare = null;
-		for (Piece p : black) {
-			if (p.getType().equals("King")) {
-				kingSquare = boardState[p.getX()][p.getY()];
-			}
-		}
-		
-		for (Piece p : white) {
-			ArrayList<Square> moves = this.findAllMoves(boardState[p.getX()][p.getY()], boardState);
-			if (moves.contains(kingSquare)) {
-				return true;
-			}
-		}
-		return false;
+	public Square getSquare(int x, int y, Square[][] boardState) {
+		return boardState[x][y];
 	}
-	
-	// removes all pieces from the board
-	public void clear(Square[][] boardState) {
-		
-		for(int x = 0; x <= 7; x++) {
-			for(int y = 0; x <= 7; x++) {
-				boardState[x][y].clearSquare();
-			}
-		}
-		// remove all pieces from white and black
-		white.clear();
-		black.clear();
+
+	public ArrayList<Piece> getWhitePieces() {
+		return white;
 	}
-	
+
+	public ArrayList<Piece> getBlackPieces() {
+		return black;
+	}
+
 	// places pieces in their starting positions
 	public void setup() {
 		this.clear(squares);
@@ -132,68 +97,56 @@ public class ChessBoard {
 			squares[x][y].placePiece(p);
 		}
 	}
-	
-	public ArrayList<Piece> getWhitePieces() {
-		return white;
-	}
-	public ArrayList<Piece> getBlackPieces() {
-		return black;
-	}
-	
-	public Square getSquare(int x, int y, Square[][] boardState) {
-		return boardState[x][y];
-	}
 
+	// removes all pieces from the board
+	public void clear(Square[][] boardState) {
+		
+		for(int x = 0; x <= 7; x++) {
+			for(int y = 0; x <= 7; x++) {
+				boardState[x][y].clearSquare();
+			}
+		}
+		// remove all pieces from white and black
+		white.clear();
+		black.clear();
+	}
+	
 	public ArrayList<Square> findLegalMoves(Square squareFrom, Square[][] boardState) throws ClassNotFoundException, IOException {
 		ArrayList<Square> moves = findAllMoves(squareFrom, boardState);
-		/*ArrayList<Square> toRemove = new ArrayList<Square>();
+		ArrayList<Square> toRemove = new ArrayList<Square>();
 		for (Square squareTo : moves) {
 			if (moveCausesCheck(squareFrom, squareTo, boardState)) {
 				System.out.println("Move to " + squareTo.getX() + " " + squareTo.getY() + " causes check");
 				toRemove.add(squareTo);
 			}
 		}
-		moves.removeAll(toRemove);*/
+		moves.removeAll(toRemove);
 		return moves;
 	}
 	
-	// finds moves that are illegal due to ending in check
-	// NEED TO FIX THIS
-	private boolean moveCausesCheck(Square squareFrom, Square squareTo, Square[][] boardState) throws IOException, ClassNotFoundException {
-		Player color = squareFrom.getColor();
-		
-		// deep clone current game state
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-	    ObjectOutputStream oos = new ObjectOutputStream(baos);
-	    oos.writeObject((Object)boardState);
-	    ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-	    ObjectInputStream ois = new ObjectInputStream(bais);
-	    Square[][] copy = (Square[][]) ois.readObject();
-	    
-	    // get the from and to squares in the clone
-	    int xf = squareFrom.getX();
-	    int yf = squareFrom.getY();
-	    int xt = squareTo.getX();
-	    int yt = squareTo.getY();
-	    
-	    Square cloneFrom = copy[xf][yf];
-	    Square cloneTo = copy[xt][yt];
-	    
-	    // make the move in the copy
-	    Piece p = cloneFrom.getPiece();
-	    cloneTo.placePiece(p);
-	    cloneFrom.clearSquare();
-	    
-	    if (color == Player.white) return (whiteIsChecked(copy));
-	    else return (blackIsChecked(copy));
+	// Need to fix this
+	public static boolean boardIsChecked(Square[][] board, Player toMove) {
+		// find all the pieces of the opposing color
+		// find the current space of the player's king
+		ArrayList<Square> enemySquares = new ArrayList<Square>();
+		Square kingSquare = null;
+		for (Square[] col : board) {
+			for (Square s : col) {
+				if (s.getColor() != toMove && s.hasPiece()) enemySquares.add(s);
+				if (s.hasPiece() && s.getPieceType().equals("King")) kingSquare = s;
+			}
+		}
+		// if any of the enemy pieces can hit the king, return true
+		for (Square s : enemySquares) {
+			if (findAllMoves(s, board).contains(kingSquare)) return true;
+		}
+		return false;
 	}
-
-	public ArrayList<Square> findAllMoves(Square squareFrom, Square[][] boardState) {
+	
+	public static ArrayList<Square> findAllMoves(Square squareFrom, Square[][] boardState) {
 		ArrayList<Square> possibleSquaresTo = new ArrayList<Square>();
 		int x = squareFrom.getX();
 		int y = squareFrom.getY();
-		Player color = squareFrom.getColor();
-		
 		if (squareFrom.getPieceType().equals("Pawn")) {
 			possibleSquaresTo.addAll(findPawnMoves(x, y, boardState));
 		} else if (squareFrom.getPieceType().equals("Castle")) {
@@ -210,7 +163,25 @@ public class ChessBoard {
 		return possibleSquaresTo;
 	}
 
-	private ArrayList<Square> findPawnMoves(int x, int y, Square[][] boardState) {
+	// precondition is that the move is valid
+	public void makeMove(Square from, Square to) {
+		Piece p = from.getPiece();
+		
+		// if the to square has a piece, remove it
+		if (to.hasPiece()) {
+			this.black.remove(to.getPiece());
+			this.white.remove(to.getPiece());
+			to.clearSquare();
+		}
+		
+		// place the piece
+		to.placePiece(p);
+		
+		// remove the piece from the old square
+		from.clearSquare();
+	}
+
+	private static ArrayList<Square> findPawnMoves(int x, int y, Square[][] boardState) {
 		Player currTurn = Player.white;
 		if (boardState[x][y].getColor() == Player.black) currTurn = Player.black;
 		
@@ -240,7 +211,7 @@ public class ChessBoard {
 		}
 		return moves;
 	}
-	private ArrayList<Square> findCastleMoves(int x, int y, Square[][] boardState) {
+	private static ArrayList<Square> findCastleMoves(int x, int y, Square[][] boardState) {
 		Player currTurn = Player.white;
 		if (boardState[x][y].getColor() == Player.black) currTurn = Player.black;
 		
@@ -276,7 +247,7 @@ public class ChessBoard {
 		}
 		return moves;
 	}
-	private ArrayList<Square> findKnightMoves(int x, int y, Square[][] boardState) {
+	private static ArrayList<Square> findKnightMoves(int x, int y, Square[][] boardState) {
 		Player currTurn = Player.white;
 		if (boardState[x][y].getColor() == Player.black) currTurn = Player.black;
 		
@@ -299,7 +270,7 @@ public class ChessBoard {
 		}
 		return moves;
 	}
-	private ArrayList<Square> findBishopMoves(int x, int y, Square[][] boardState) {
+	private static ArrayList<Square> findBishopMoves(int x, int y, Square[][] boardState) {
 		Player currTurn = Player.white;
 		if (boardState[x][y].getColor() == Player.black) currTurn = Player.black;
 		
@@ -335,13 +306,13 @@ public class ChessBoard {
 		}
 		return moves;
 	}
-	private ArrayList<Square> findQueenMoves(int x, int y, Square[][] boardState) {
+	private static ArrayList<Square> findQueenMoves(int x, int y, Square[][] boardState) {
 		ArrayList<Square> moves = new ArrayList<Square>();
 		moves.addAll(findCastleMoves(x, y, boardState));
 		moves.addAll(findBishopMoves(x, y, boardState));
 		return moves;
 	}
-	private ArrayList<Square> findKingMoves(int x, int y, Square[][] boardState) {
+	private static ArrayList<Square> findKingMoves(int x, int y, Square[][] boardState) {
 		Player currTurn = Player.white;
 		if (boardState[x][y].getColor() == Player.black) currTurn = Player.black;
 		
@@ -353,35 +324,58 @@ public class ChessBoard {
 				if (!boardState[xVal][yVal].hasPiece() || boardState[xVal][yVal].getColor() != currTurn) {
 					moves.add(boardState[xVal][yVal]);
 				}
-				System.out.println(xVal + " " + yVal);
 			}
 		}	
 		return moves;
 	}
 
 
-	// precondition is that the move is valid
-	public void makeMove(Square from, Square to) {
-		Piece p = from.getPiece();
+	// finds moves that are illegal due to ending in check
+	private boolean moveCausesCheck(Square squareFrom, Square squareTo, Square[][] boardState) throws IOException, ClassNotFoundException {
+		Player color = squareFrom.getColor();
 		
-		// if the to square has a piece, remove it
-		if (to.hasPiece()) {
-			this.black.remove(to.getPiece());
-			this.white.remove(to.getPiece());
-			to.clearSquare();
-		}
-		
-		// place the piece
-		to.placePiece(p);
-		
-		// remove the piece from the old square
-		from.clearSquare();
+		// deep clone current game state
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	    ObjectOutputStream oos = new ObjectOutputStream(baos);
+	    oos.writeObject((Object)boardState);
+	    ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+	    ObjectInputStream ois = new ObjectInputStream(bais);
+	    Square[][] copy = (Square[][]) ois.readObject();
+	    
+	    // get the from and to squares in the clone
+	    int xf = squareFrom.getX();
+	    int yf = squareFrom.getY();
+	    int xt = squareTo.getX();
+	    int yt = squareTo.getY();
+	    
+	    Square cloneFrom = copy[xf][yf];
+	    Square cloneTo = copy[xt][yt];
+	    
+	    //System.out.println("Printing curr state:");
+	    //printBoard(copy);
+	    //System.out.println("Done Printing curr state:");
+	    // make the move in the copy
+	    Piece p = cloneFrom.getPiece();
+	    cloneTo.placePiece(p);
+	    cloneFrom.clearSquare();
+	    //System.out.println("Printing proposed move:");
+	    //printBoard(copy);
+	    //System.out.println("Done Printing proposed move:");
+	    
+	    return boardIsChecked(copy, color);
 	}
-	
-	// checks if the proposed move already has a piece in it of the player's own color
-	private boolean squareIsOccupied(int x, int y, Player color, Square[][] boardState) {
-		if (!boardState[x][y].hasPiece()) return true;
-		if (boardState[x][y].getColor() != color) return true;
-		return false;
+
+	public void printBoard(Square[][] board) {
+		for (Square[] col : board) {
+			for (Square s : col) {
+				if (!s.hasPiece()) {
+					System.out.print("#");
+					continue;
+				}
+				if (s.getColor() == Player.white) System.out.print("O");
+				else System.out.print("X");
+			}
+			System.out.println();
+		}
 	}
 }

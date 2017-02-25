@@ -133,7 +133,7 @@ public class ChessBoard {
 		for (Square[] col : board) {
 			for (Square s : col) {
 				if (s.getColor() != toMove && s.hasPiece()) enemySquares.add(s);
-				if (s.hasPiece() && s.getPieceType().equals("King")) kingSquare = s;
+				if (s.hasPiece() && s.getColor() == toMove && s.getPieceType().equals("King")) kingSquare = s;
 			}
 		}
 		// if any of the enemy pieces can hit the king, return true

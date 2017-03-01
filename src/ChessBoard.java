@@ -4,8 +4,12 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Stack;
 
 public class ChessBoard {
+	public static final int BOARD_START = 0;
+	public static final int BOARD_END = 7;
+	
 	private ArrayList<Piece> white;
 	private ArrayList<Piece> black;
 	private Square[][] squares;
@@ -38,13 +42,13 @@ public class ChessBoard {
 		return black;
 	}
 
-	// places pieces in their starting positions
+	// clears the board and then places pieces in their starting positions
 	public void setup() {
 		this.clear(squares);
 		int x, y;
 		
 		y = 7;
-		//white backline
+		//white back line
 		for (x = 0; x <= 7; x++) {
 			Piece p = null;
 			if (x == 0 || x == 7) {
@@ -71,7 +75,7 @@ public class ChessBoard {
 		}
 		
 		y = 0;
-		//black backline
+		//black back line
 		for (x = 0; x <= 7; x++) {
 			Piece p = null;
 			if (x == 0 || x == 7) {
@@ -111,12 +115,12 @@ public class ChessBoard {
 		black.clear();
 	}
 	
+	// Finds all moves that are allowed by a piece from a specified square
 	public ArrayList<Square> findLegalMoves(Square squareFrom, Square[][] boardState) throws ClassNotFoundException, IOException {
 		ArrayList<Square> moves = findAllMoves(squareFrom, boardState);
 		ArrayList<Square> toRemove = new ArrayList<Square>();
 		for (Square squareTo : moves) {
 			if (moveCausesCheck(squareFrom, squareTo, boardState)) {
-				System.out.println("Move to " + squareTo.getX() + " " + squareTo.getY() + " causes check");
 				toRemove.add(squareTo);
 			}
 		}
@@ -124,10 +128,10 @@ public class ChessBoard {
 		return moves;
 	}
 	
-	// Need to fix this
+	// Returns true if the current board state is in check
 	public static boolean boardIsChecked(Square[][] board, Player toMove) {
-		// find all the pieces of the opposing color
-		// find the current space of the player's king
+		// Find all the pieces of the opposing color
+		// Find the current space of the player's king
 		ArrayList<Square> enemySquares = new ArrayList<Square>();
 		Square kingSquare = null;
 		for (Square[] col : board) {
@@ -136,13 +140,14 @@ public class ChessBoard {
 				if (s.hasPiece() && s.getColor() == toMove && s.getPieceType().equals("King")) kingSquare = s;
 			}
 		}
-		// if any of the enemy pieces can hit the king, return true
+		// If any of the enemy pieces can hit the king, return true
 		for (Square s : enemySquares) {
 			if (findAllMoves(s, board).contains(kingSquare)) return true;
 		}
 		return false;
 	}
 	
+	// Finds all moves possible from a piece (ignoring moves that are illegal due to check)
 	public static ArrayList<Square> findAllMoves(Square squareFrom, Square[][] boardState) {
 		ArrayList<Square> possibleSquaresTo = new ArrayList<Square>();
 		int x = squareFrom.getX();
@@ -163,7 +168,8 @@ public class ChessBoard {
 		return possibleSquaresTo;
 	}
 
-	// precondition is that the move is valid
+	// Move a piece from one square to another
+	// If the move is a castling move, the king and castle are moved simultaneously
 	public void makeMove(Square from, Square to) {
 		Piece p = from.getPiece();
 		
@@ -345,9 +351,63 @@ public class ChessBoard {
 		// Check for availability of castling
 		// spaces between king and castle must be free
 		// king and castle in question must both have hasMoved() return false
+		
+		// if king hasn't moved
+		if (!boardState[x][y].getPiece().hasMoved()) {
+			if (currTurn == Player.white) {
+				// check left castle
+				if (!boardState[0][7].getPiece().hasMoved()) {
+					int[][] spaces = {{1,7},{2,7},{3,7}};
+					if (spacesAreEmpty(boardState, spaces) && !spacesAreThreatened(boardState, spaces, currTurn)) moves.add(boardState[1][7]);
+				}
+				// check right castle
+				if (!boardState[7][7].getPiece().hasMoved()) {
+					int[][] spaces = {{5,7},{6,7}};
+					if (spacesAreEmpty(boardState, spaces) && !spacesAreThreatened(boardState, spaces, currTurn)) moves.add(boardState[6][7]);
+				}
+			} else {
+				// check left castle
+				if (!boardState[0][0].getPiece().hasMoved()) {
+					int[][] spaces = {{1,0},{2,0},{3,0}};
+					if (spacesAreEmpty(boardState, spaces) && !spacesAreThreatened(boardState, spaces, currTurn)) moves.add(boardState[1][0]);
+				}
+				// check right castle
+				if (!boardState[7][0].getPiece().hasMoved()) {
+					int[][] spaces = {{5,0},{6,0}};
+					if (spacesAreEmpty(boardState, spaces) && !spacesAreThreatened(boardState, spaces, currTurn)) moves.add(boardState[6][0]);
+				}
+			}
+		}
+		
 		return moves;
 	}
 
+
+	private static boolean spacesAreThreatened(Square[][] boardState, int[][] checkCoords, Player toMove) {
+		
+		ArrayList<Square> enemySquares = new ArrayList<Square>();
+		ArrayList<Square> checkSquares = new ArrayList<Square>();
+		
+		// Getting the squares that must be safe
+		for (int[] coords : checkCoords) {
+			checkSquares.add(boardState[coords[0]][coords[1]]);
+		}
+		
+		// Getting the squares the enemy pieces are on
+		for (Square[] col : boardState) {
+			for (Square s : col) {
+				if (s.getColor() != toMove && s.hasPiece()) enemySquares.add(s);
+			}
+		}
+		
+		// if any of the enemy pieces can hit a checkSquare, return true
+		for (Square s : enemySquares) {
+			for (Square t : checkSquares) {
+				if (findAllMoves(s, boardState).contains(t)) return true;
+			}
+		}
+		return false;
+	}
 
 	// finds moves that are illegal due to ending in check
 	private boolean moveCausesCheck(Square squareFrom, Square squareTo, Square[][] boardState) throws IOException, ClassNotFoundException {
@@ -370,18 +430,17 @@ public class ChessBoard {
 	    Square cloneFrom = copy[xf][yf];
 	    Square cloneTo = copy[xt][yt];
 	    
-	    //System.out.println("Printing curr state:");
-	    //printBoard(copy);
-	    //System.out.println("Done Printing curr state:");
-	    // make the move in the copy
 	    Piece p = cloneFrom.getPiece();
 	    cloneTo.placePiece(p);
 	    cloneFrom.clearSquare();
-	    //System.out.println("Printing proposed move:");
-	    //printBoard(copy);
-	    //System.out.println("Done Printing proposed move:");
 	    
 	    return boardIsChecked(copy, color);
+	}
+	private static boolean spacesAreEmpty(Square[][] board, int[][] coords) {
+		for (int[] coord : coords) {
+			if (board[coord[0]][coord[1]].hasPiece()) return false;
+		}
+		return true;
 	}
 
 	public void printBoard(Square[][] board) {
@@ -397,4 +456,6 @@ public class ChessBoard {
 			System.out.println();
 		}
 	}
+	
+	
 }

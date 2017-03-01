@@ -176,6 +176,18 @@ public class ChessBoard {
 		
 		// place the piece
 		to.placePiece(p);
+		p.moveTo(to.getX(), to.getY());
+		
+		// if the piece is a pawn at the end of the board, promote it into a queen
+		if (p.getType().equals("Pawn")) {
+			if ((p.getY() == 7 && p.getColor().equals(Player.black)) || (p.getY() == 0 && p.getColor().equals(Player.white))) p.promote();
+		}
+		
+		// if the move a castle move, move the king and castle simultaneously
+		// TO DO
+		// TO DO
+		// TO DO
+		// TO DO
 		
 		// remove the piece from the old square
 		from.clearSquare();
@@ -186,6 +198,9 @@ public class ChessBoard {
 		if (boardState[x][y].getColor() == Player.black) currTurn = Player.black;
 		
 		ArrayList<Square> moves = new ArrayList<Square>();
+		
+		if (y == 7 || y == 0) return moves;
+		
 		int yDir = 1;
 		if (currTurn == Player.white) yDir = -1;
 		
@@ -326,6 +341,10 @@ public class ChessBoard {
 				}
 			}
 		}	
+		
+		// Check for availability of castling
+		// spaces between king and castle must be free
+		// king and castle in question must both have hasMoved() return false
 		return moves;
 	}
 

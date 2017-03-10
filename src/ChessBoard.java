@@ -117,7 +117,7 @@ public class ChessBoard {
 	
 	// Finds all moves that are allowed by a piece from a specified square
 	public ArrayList<Square> findLegalMoves(Square squareFrom, Square[][] boardState) throws ClassNotFoundException, IOException {
-		ArrayList<Square> moves = findAllMoves(squareFrom, boardState);
+		ArrayList<Square> moves = findAllMoves(squareFrom, boardState, true);
 		ArrayList<Square> toRemove = new ArrayList<Square>();
 		for (Square squareTo : moves) {
 			if (moveCausesCheck(squareFrom, squareTo, boardState)) {
@@ -142,13 +142,13 @@ public class ChessBoard {
 		}
 		// If any of the enemy pieces can hit the king, return true
 		for (Square s : enemySquares) {
-			if (findAllMoves(s, board).contains(kingSquare)) return true;
+			if (findAllMoves(s, board, false).contains(kingSquare)) return true;
 		}
 		return false;
 	}
 	
 	// Finds all moves possible from a piece (ignoring moves that are illegal due to check)
-	public static ArrayList<Square> findAllMoves(Square squareFrom, Square[][] boardState) {
+	public static ArrayList<Square> findAllMoves(Square squareFrom, Square[][] boardState, boolean checkCastling) {
 		ArrayList<Square> possibleSquaresTo = new ArrayList<Square>();
 		int x = squareFrom.getX();
 		int y = squareFrom.getY();
@@ -163,7 +163,7 @@ public class ChessBoard {
 		} else if (squareFrom.getPieceType().equals("Queen")) {
 			possibleSquaresTo.addAll(findQueenMoves(x, y, boardState));
 		} else if (squareFrom.getPieceType().equals("King")) {
-			possibleSquaresTo.addAll(findKingMoves(x, y, boardState));
+			possibleSquaresTo.addAll(findKingMoves(x, y, boardState, checkCastling));
 		}
 		return possibleSquaresTo;
 	}
@@ -189,14 +189,25 @@ public class ChessBoard {
 			if ((p.getY() == 7 && p.getColor().equals(Player.black)) || (p.getY() == 0 && p.getColor().equals(Player.white))) p.promote();
 		}
 		
-		// if the move a castle move, move the king and castle simultaneously
-		// TO DO
-		// TO DO
-		// TO DO
-		// TO DO
-		
 		// remove the piece from the old square
 		from.clearSquare();
+		
+		// if the move is a castling move, move the castle too
+		if (p.getType().equals("King") && Math.abs(from.getX() - to.getX()) > 1) {
+			int dir = -1;
+			if (to.getX() > 4) dir = 1;
+			
+			dir *= -1;
+			
+			Square castleTo = squares[p.getX() + dir][p.getY()];
+			Square castleFrom = squares[p.getX() - dir][p.getY()];
+			Piece castle = castleFrom.getPiece();
+			
+			castleTo.placePiece(castle);
+			castleFrom.clearSquare();
+			castle.moveTo(castleTo.getX(), castleTo.getY());
+			
+		}
 	}
 
 	private static ArrayList<Square> findPawnMoves(int x, int y, Square[][] boardState) {
@@ -333,7 +344,7 @@ public class ChessBoard {
 		moves.addAll(findBishopMoves(x, y, boardState));
 		return moves;
 	}
-	private static ArrayList<Square> findKingMoves(int x, int y, Square[][] boardState) {
+	private static ArrayList<Square> findKingMoves(int x, int y, Square[][] boardState, boolean checkCastling) {
 		Player currTurn = Player.white;
 		if (boardState[x][y].getColor() == Player.black) currTurn = Player.black;
 		
@@ -353,7 +364,7 @@ public class ChessBoard {
 		// king and castle in question must both have hasMoved() return false
 		
 		// if king hasn't moved
-		if (!boardState[x][y].getPiece().hasMoved()) {
+		if (!boardState[x][y].getPiece().hasMoved() && checkCastling) {
 			if (currTurn == Player.white) {
 				// check left castle
 				if (!boardState[0][7].getPiece().hasMoved()) {
@@ -403,7 +414,7 @@ public class ChessBoard {
 		// if any of the enemy pieces can hit a checkSquare, return true
 		for (Square s : enemySquares) {
 			for (Square t : checkSquares) {
-				if (findAllMoves(s, boardState).contains(t)) return true;
+				if (findAllMoves(s, boardState, false).contains(t)) return true;
 			}
 		}
 		return false;
